@@ -3,6 +3,8 @@ library(bestglm)
 library(ggplot2)
 library(DescTools)
 library(dplyr)
+library(scales)
+library(stringr)
 grammy_data = read_excel("C://Users//Massimo Camuso//Desktop//Academics//Spring 2025//Capstone//Grammy project//grammy_full_data.xlsx")
 
 grammy_data$rhythm.bpm <- as.numeric(grammy_data$rhythm.bpm)
@@ -135,11 +137,9 @@ prob_win  # Output: 0.423 (42.3%)
 
 
 
-library(ggplot2)
-
-# Create a data frame with song names and probabilities
+#Graphing results
 nominees <- data.frame(
-  song = c("not_like_us", "texas_hold", "espresso", "charli", "birds", "good_luck", "fortnight"),
+  song = c("Not Like Us", "TEXAS HOLD 'EM", "Espresso", "Brat", "Birds of a Feather", "Good Luck, Babe!", "Fortnight"),
   probability = c(
     predict(best_grammy_model, newdata = not_like_us, type = "response"),
     predict(best_grammy_model, newdata = texas_hold, type = "response"),
@@ -151,17 +151,61 @@ nominees <- data.frame(
   )
 )
 
-# Plot
-ggplot(nominees, aes(x = reorder(song, -probability), y = probability, fill = song)) +
-  geom_col() +
-  geom_text(aes(label = scales::percent(probability, accuracy = 0.1)), vjust = -0.5) +
-  labs(
-    title = "Predicted Probability of Winning Record of the Year (2025)",
-    x = "Song",
-    y = "Probability of Winning",
-    fill = "Song"
-  ) +
-  scale_y_continuous(labels = scales::percent, limits = c(0, 0.25)) +
-  theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+# --- 3. Process the data for plotting ---
+nominees_processed <- nominees %>%
+  mutate(Is_Winner = ifelse(probability == max(probability), 'Yes', 'No')) %>%
+  mutate(song = str_wrap(song, width = 20)) %>% # Keep this at 20
+  mutate(Song_Label = ifelse(Is_Winner == 'Yes', paste('🏆', song), song)) %>%
+  mutate(Song_Label = reorder(Song_Label, probability)) %>%
+  mutate(Label_Color = ifelse(Is_Winner == 'Yes', 'black', 'white'))
 
+# --- 4. Create the plot ---
+grammy_plot_final <- ggplot(nominees_processed, aes(x = probability, y = Song_Label, fill = Is_Winner)) +
+  geom_col() +
+  geom_text(
+    aes(label = percent(probability, accuracy = 1), color = Label_Color), 
+    hjust = 1.2,
+    size = 4,
+    fontface = "bold"
+  ) +
+  scale_color_identity() + 
+  scale_fill_manual(values = c("Yes" = "#FFD700", "No" = "grey"), guide = "none") +
+  scale_x_continuous(
+    limits = c(0, max(nominees_processed$probability) * 1.05),
+    labels = percent_format(accuracy = 1) 
+  ) +
+  labs(
+    title = "Predicting the 2025 Grammy Winner",
+    subtitle = "Record of the Year Win Probabilities",
+    x = "Predicted Probability of Winning",
+    y = ""
+  ) +
+  
+ 
+  theme_minimal(base_size = 12) + 
+  
+  theme(
+    plot.title = element_text(face = "bold", size = 15), 
+    plot.subtitle = element_text(size = 11), 
+    panel.grid.major.y = element_blank(),
+    panel.grid.minor.x = element_blank(),
+    axis.ticks.y = element_blank(),
+    axis.text.y = element_text(face = "bold"),
+    plot.margin = margin(t = 10, r = 10, b = 10, l = 10, unit = "pt")
+  )
+
+# --- 5. Save and display the plot ---
+ggsave(
+  "upwork_thumbnail_final_fit.png", 
+  plot = grammy_plot_final, 
+  width = 8,
+  
+  
+  height = 6.0,  
+  
+  dpi = 300,
+  
+  bg='white'
+)
+
+print(grammy_plot_final)
