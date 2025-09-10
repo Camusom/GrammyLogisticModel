@@ -86,9 +86,32 @@ get_1unit_effect <- function(model, predictor, baseline_data, step = 1) {
 }
 
 # Example: Danceability effect
-get_1unit_effect(best_grammy_model, "Popularity", baseline)
+get_1unit_effect(best_grammy_model, "duration", baseline)
 # Output: ~ -0.568 (56.8% decrease)
 
+
+winners <- grammy_data %>% filter(win == 1)
+losers <- grammy_data %>% filter(win == 0)
+
+# Duration difference (in seconds)
+mean_duration_winners <- mean(winners$`Duration (ms)` / 1000, na.rm = TRUE)
+mean_duration_losers <- mean(losers$`Duration (ms)` / 1000, na.rm = TRUE)
+duration_diff <- mean_duration_winners - mean_duration_losers
+print(paste("Duration difference:", round(duration_diff, 0), "seconds"))
+
+# Popularity difference  
+mean_pop_winners <- mean(winners$Popularity, na.rm = TRUE)
+mean_pop_losers <- mean(losers$Popularity, na.rm = TRUE)
+pop_diff <- mean_pop_winners - mean_pop_losers
+print(paste("Popularity difference:", round(pop_diff, 0), "points"))
+
+# Danceability difference
+mean_dance_winners <- mean(winners$rhythm.danceability, na.rm = TRUE)
+mean_dance_losers <- mean(losers$rhythm.danceability, na.rm = TRUE)
+dance_diff <- mean_dance_winners - mean_dance_losers
+print(paste("Danceability difference:", round(dance_diff, 3)))
+
+summary(best_grammy_model)
 
 
 
@@ -209,3 +232,13 @@ ggsave(
 )
 
 print(grammy_plot_final)
+
+
+
+
+
+
+
+
+
+
